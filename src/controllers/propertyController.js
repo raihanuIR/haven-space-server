@@ -118,11 +118,6 @@ export const getPropertyById = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid property ID' });
     }
 
-    // If MongoDB is currently connecting, await briefly to avoid premature 404
-    if (mongoose.connection.readyState === 2) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    }
-
     // Try MongoDB if connected and id is a valid ObjectId
     if (mongoose.connection.readyState === 1 && mongoose.isValidObjectId(rawId)) {
       const property = await Property.findById(rawId);
