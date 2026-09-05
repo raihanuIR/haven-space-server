@@ -42,15 +42,19 @@ export const addReview = async (req, res) => {
 
 export const getPropertyReviews = async (req, res) => {
   try {
-    if (mongoose.connection.readyState === 1) {
-      const reviews = await Review.find({ propertyId: req.params.propertyId }).sort({ createdAt: -1 });
-      return res.json({ success: true, reviews });
+    const rawPropId = req.params.propertyId ? String(req.params.propertyId).trim() : '';
+
+    if (mongoose.connection.readyState === 1 && mongoose.isValidObjectId(rawPropId)) {
+      const reviews = await Review.find({ propertyId: rawPropId }).sort({ createdAt: -1 });
+      return res.json({ success: true, reviews: reviews || [] });
     }
 
-    const reviews = mockReviews.filter((r) => r.propertyId === req.params.propertyId);
-    return res.json({ success: true, reviews });
+    const reviews = mockReviews.filter((r) => r.propertyId === rawPropId);
+    return res.json({ success: true, reviews: reviews || [] });
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    const rawPropId = req.params.propertyId ? String(req.params.propertyId).trim() : '';
+    const reviews = mockReviews.filter((r) => r.propertyId === rawPropId);
+    return res.json({ success: true, reviews: reviews || [] });
   }
 };
 

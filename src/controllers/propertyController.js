@@ -113,17 +113,38 @@ export const getAllProperties = async (req, res) => {
 // 3. Single property details
 export const getPropertyById = async (req, res) => {
   try {
-    if (mongoose.connection.readyState === 1) {
-      const property = await Property.findById(req.params.id);
-      if (!property) return res.status(404).json({ success: false, message: 'Property not found' });
-      return res.json({ success: true, property });
+    const rawId = req.params.id ? String(req.params.id).trim() : '';
+    if (!rawId) {
+      return res.status(400).json({ success: false, message: 'Invalid property ID' });
     }
 
-    // In-memory fallback
-    const property = mockProperties.find((p) => p._id === req.params.id);
-    if (!property) return res.status(404).json({ success: false, message: 'Property not found' });
-    return res.json({ success: true, property });
+    // If MongoDB is currently connecting, await briefly to avoid premature 404
+    if (mongoose.connection.readyState === 2) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    // Try MongoDB if connected and id is a valid ObjectId
+    if (mongoose.connection.readyState === 1 && mongoose.isValidObjectId(rawId)) {
+      const property = await Property.findById(rawId);
+      if (property) {
+        return res.json({ success: true, property });
+      }
+    }
+
+    // In-memory fallback (handles mock property IDs like prop_001 or fallback data)
+    const mockProp = mockProperties.find((p) => p._id === rawId);
+    if (mockProp) {
+      return res.json({ success: true, property: mockProp });
+    }
+
+    return res.status(404).json({ success: false, message: 'Property not found' });
   } catch (error) {
+    // If DB throws CastError or error, check in-memory store before returning 500
+    const rawId = req.params.id ? String(req.params.id).trim() : '';
+    const fallbackProp = mockProperties.find((p) => p._id === rawId);
+    if (fallbackProp) {
+      return res.json({ success: true, property: fallbackProp });
+    }
     return res.status(500).json({ success: false, message: error.message });
   }
 };
