@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
 import connectDB from './src/config/db.js';
 import { seedDatabase } from './src/utils/seedData.js';
 
@@ -18,7 +19,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Connect to MongoDB
+// Connect to MongoDB on startup
 connectDB().then((connected) => {
   if (connected) {
     seedDatabase();
@@ -32,11 +33,20 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Base health check
-app.get('/', (req, res) => {
+// Serverless Mongoose connection assurance middleware
+app.use(async (req, res, next) => {
+  if (mongoose.connection.readyState !== 1 && process.env.MONGO_URI) {
+    await connectDB();
+  }
+  next();
+});
+
+// Base health check (supports both root / and /api)
+app.get(['/', '/api'], (req, res) => {
   res.json({
     name: 'Property Rental & Booking Platform API',
     status: 'Online',
+    database: mongoose.connection.readyState === 1 ? 'Connected (MongoDB Atlas)' : 'In-Memory Fallback',
     version: '1.0.0',
     documentation: '/api/properties',
   });
