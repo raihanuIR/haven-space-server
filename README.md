@@ -20,16 +20,6 @@ Backend RESTful API engine powering the RentalHub property rental platform. Buil
 
 ---
 
-## 🔑 Demo Access Credentials
-
-| Role | Email | Password | Scope & Privileges |
-| :--- | :--- | :--- | :--- |
-| **Admin** | `admin@rentalhub.com` | `AdminPassword123!` | Moderate properties with rejection feedback, change user roles, audit bookings, and view paginated financial transactions. |
-| **Owner** | `owner@rentalhub.com` | `OwnerPassword123!` | 12-Month Recharts earnings line chart, Download Earnings PDF, publish new listings, view rejection feedback (👁️), approve/reject booking requests. |
-| **Tenant** | `tenant@rentalhub.com` | `TenantPassword123!` | Browse catalog, filter & sort listings, bookmark favorites, reserve properties via Stripe with confetti celebration, submit ratings & reviews. |
-
----
-
 ## 🏗️ Architecture & Design Principles
 
 1. **MVC Pattern**: Clear separation of concerns among Routes, Controllers, Models, and Middlewares.
