@@ -1,14 +1,16 @@
 import Stripe from 'stripe';
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-let stripeInstance = null;
-if (stripeSecretKey && !stripeSecretKey.includes('MockKey')) {
-  try {
-    stripeInstance = new Stripe(stripeSecretKey);
-  } catch (err) {
-    console.warn('[Stripe Init Warning]:', err.message);
+const getStripeInstance = () => {
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  if (stripeSecretKey && !stripeSecretKey.includes('MockKey')) {
+    try {
+      return new Stripe(stripeSecretKey);
+    } catch (err) {
+      console.warn('[Stripe Init Warning]:', err.message);
+    }
   }
-}
+  return null;
+};
 
 export const createPaymentIntent = async (req, res) => {
   try {
@@ -19,16 +21,17 @@ export const createPaymentIntent = async (req, res) => {
     }
 
     const amountInCents = Math.round(Number(amount) * 100);
+    const stripe = getStripeInstance();
 
     // If valid Stripe key is available, create real PaymentIntent
-    if (stripeInstance) {
-      const paymentIntent = await stripeInstance.paymentIntents.create({
+    if (stripe) {
+      const paymentIntent = await stripe.paymentIntents.create({
         amount: amountInCents,
         currency: 'usd',
         metadata: {
-          propertyId: propertyId || '',
+          propertyId: propertyId ? propertyId.toString() : '',
           propertyTitle: propertyTitle || '',
-          userId: req.user._id.toString(),
+          userId: req.user?._id ? req.user._id.toString() : 'user',
         },
         automatic_payment_methods: {
           enabled: true,
