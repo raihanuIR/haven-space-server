@@ -16,6 +16,14 @@ export const createPaymentIntent = async (req, res) => {
   try {
     const { amount, propertyId, propertyTitle } = req.body;
 
+    // Property owners are strictly prohibited from booking properties or initiating rental payments
+    if (req.user?.role === 'Owner') {
+      return res.status(403).json({
+        success: false,
+        message: 'Property owners are not permitted to initiate property bookings or payments.',
+      });
+    }
+
     if (!amount || amount <= 0) {
       return res.status(400).json({ success: false, message: 'Valid amount is required' });
     }

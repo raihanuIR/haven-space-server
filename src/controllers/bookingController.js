@@ -15,6 +15,14 @@ export const createBooking = async (req, res) => {
       paymentIntentId,
     } = req.body;
 
+    // Property owners are strictly prohibited from booking properties
+    if (req.user?.role === 'Owner') {
+      return res.status(403).json({
+        success: false,
+        message: 'Property owners are not permitted to book properties. Please use a tenant account.',
+      });
+    }
+
     if (mongoose.connection.readyState === 1) {
       const property = await Property.findById(propertyId);
       if (!property) return res.status(404).json({ success: false, message: 'Property not found' });
