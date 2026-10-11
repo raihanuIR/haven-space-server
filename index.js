@@ -13,6 +13,7 @@ import favoriteRoutes from './src/routes/favoriteRoutes.js';
 import ownerRoutes from './src/routes/ownerRoutes.js';
 import adminRoutes from './src/routes/adminRoutes.js';
 import paymentRoutes from './src/routes/paymentRoutes.js';
+import contactRoutes from './src/routes/contactRoutes.js';
 
 dotenv.config();
 
@@ -61,6 +62,7 @@ app.use('/api/favorites', favoriteRoutes);
 app.use('/api/owner', ownerRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/contact', contactRoutes);
 
 // 404 handler
 app.use((req, res) => {

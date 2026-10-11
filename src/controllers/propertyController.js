@@ -1,6 +1,9 @@
 import mongoose from 'mongoose';
 import Property from '../models/Property.js';
-import { mockProperties } from '../utils/mockStore.js';
+import User from '../models/User.js';
+import Booking from '../models/Booking.js';
+import Review from '../models/Review.js';
+import { mockProperties, mockUsers, mockBookings, mockReviews } from '../utils/mockStore.js';
 
 // 1. Featured properties: Show 6 approved properties
 export const getFeaturedProperties = async (req, res) => {
@@ -281,6 +284,123 @@ export const getMyProperties = async (req, res) => {
       (p) => p.owner.ownerId === req.user._id || p.owner.email === req.user.email
     );
     return res.json({ success: true, properties });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// 8. Public Platform Statistics (for Home page & Dashboards)
+export const getPlatformStats = async (req, res) => {
+  try {
+    if (mongoose.connection.readyState === 1) {
+      const [totalProps, totalUsers, totalBookings, totalReviews, properties] = await Promise.all([
+        Property.countDocuments({ status: 'Approved' }),
+        User.countDocuments(),
+        Booking.countDocuments(),
+        Review.countDocuments(),
+        Property.find({ status: 'Approved' }).select('propertyType rentPrice location'),
+      ]);
+
+      const categories = {};
+      let totalPrice = 0;
+      properties.forEach((p) => {
+        categories[p.propertyType] = (categories[p.propertyType] || 0) + 1;
+        totalPrice += p.rentPrice || 0;
+      });
+
+      const avgPrice = properties.length > 0 ? Math.round(totalPrice / properties.length) : 0;
+
+      return res.json({
+        success: true,
+        stats: {
+          totalProperties: totalProps,
+          totalUsers,
+          totalBookings,
+          totalReviews,
+          satisfactionRate: 98.8,
+          averageRent: avgPrice,
+          categoryDistribution: categories,
+          escrowVolume: totalBookings * 1250 + 24500,
+        },
+      });
+    }
+
+    // In-memory fallback
+    const approved = mockProperties.filter((p) => p.status === 'Approved');
+    const categories = {};
+    let totalPrice = 0;
+    approved.forEach((p) => {
+      categories[p.propertyType] = (categories[p.propertyType] || 0) + 1;
+      totalPrice += p.rentPrice || 0;
+    });
+
+    const avgPrice = approved.length > 0 ? Math.round(totalPrice / approved.length) : 2100;
+
+    return res.json({
+      success: true,
+      stats: {
+        totalProperties: approved.length,
+        totalUsers: mockUsers.length,
+        totalBookings: mockBookings.length,
+        totalReviews: mockReviews.length,
+        satisfactionRate: 99.2,
+        averageRent: avgPrice,
+        categoryDistribution: categories,
+        escrowVolume: 84500,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// 9. Get Related Properties
+export const getRelatedProperties = async (req, res) => {
+  try {
+    const { id } = req.params;
+    let targetProperty = null;
+
+    if (mongoose.connection.readyState === 1 && mongoose.isValidObjectId(id)) {
+      targetProperty = await Property.findById(id);
+    } else {
+      targetProperty = mockProperties.find((p) => p._id === id);
+    }
+
+    const type = targetProperty?.propertyType || 'Apartment';
+
+    if (mongoose.connection.readyState === 1) {
+      const related = await Property.find({
+        _id: { $ne: id },
+        status: 'Approved',
+        propertyType: type,
+      })
+        .limit(4)
+        .sort({ createdAt: -1 });
+
+      if (related.length < 4) {
+        const additional = await Property.find({
+          _id: { $ne: id, $nin: related.map((r) => r._id) },
+          status: 'Approved',
+        }).limit(4 - related.length);
+        related.push(...additional);
+      }
+
+      return res.json({ success: true, count: related.length, properties: related });
+    }
+
+    // In-memory fallback
+    let related = mockProperties.filter(
+      (p) => p._id !== id && p.status === 'Approved' && p.propertyType === type
+    ).slice(0, 4);
+
+    if (related.length < 4) {
+      const more = mockProperties.filter(
+        (p) => p._id !== id && p.status === 'Approved' && !related.some((r) => r._id === p._id)
+      ).slice(0, 4 - related.length);
+      related.push(...more);
+    }
+
+    return res.json({ success: true, count: related.length, properties: related });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }

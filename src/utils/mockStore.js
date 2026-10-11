@@ -733,3 +733,26 @@ export const mockTransactions = [
 ];
 
 export const mockFavorites = [];
+
+export const mockContacts = [
+  {
+    _id: 'contact_001',
+    name: 'Emily Watson',
+    email: 'emily.w@example.com',
+    phone: '+1 305 555 0192',
+    subject: 'Inquiry regarding long-term lease discount',
+    message: 'Hello, I am relocating to Miami and interested in leasing the Azure Sky Penthouse for 12 months. Does the owner offer an annual discount?',
+    status: 'Unread',
+    createdAt: new Date('2026-10-01').toISOString(),
+  },
+  {
+    _id: 'contact_002',
+    name: 'David Kim',
+    email: 'david.k@example.com',
+    phone: '+1 415 555 0184',
+    subject: 'Corporate relocation partnerships',
+    message: 'Our company frequently relocates tech consultants. We would like to inquire if RentalHub provides a corporate billing dashboard.',
+    status: 'Read',
+    createdAt: new Date('2026-10-05').toISOString(),
+  },
+];

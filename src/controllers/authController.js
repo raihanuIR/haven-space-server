@@ -241,3 +241,46 @@ export const updateProfile = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
+
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Please provide both current and new password' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: 'New password must be at least 6 characters' });
+    }
+
+    if (mongoose.connection.readyState === 1) {
+      const user = await User.findById(req.user._id);
+      if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+      const isMatch = await user.matchPassword(currentPassword);
+      if (!isMatch) {
+        return res.status(400).json({ success: false, message: 'Current password is incorrect' });
+      }
+
+      user.password = newPassword;
+      await user.save();
+      return res.json({ success: true, message: 'Password successfully updated' });
+    }
+
+    // In-memory fallback
+    const user = mockUsers.find((u) => u._id === req.user._id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const isMatch = user.password === currentPassword || (user.passwordHash && bcrypt.compareSync(currentPassword, user.passwordHash));
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: 'Current password is incorrect' });
+    }
+
+    user.password = newPassword;
+    user.passwordHash = bcrypt.hashSync(newPassword, 8);
+    return res.json({ success: true, message: 'Password successfully updated' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
